@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-printos-backend-quickstart # Do not use full service names, only the service name. (i.e. pricing if the service is gravity-3daas-pricing-service)
+  namespace: aws-3d-prod
+data:
+  SERVICE_HOST: ''
+  SERVICE_HTTP_PORT: "5443"
+  SERVICE_LOG_FILE_PATH: "./current.log"
+  SERVICE_VERSION: "0.1"
+  EXECUTE_AS_DRY_RUN: "false"
+  LAUNCHDARKLY_OFFLINE: "true"
+  LAUNCHDARKLY_LOADDATA_FROM_FILES: ""
+  MONGODB_ENABLE_DNS_SEEDLIST: "true"
+  MONGODB_HOST: ""
+  MONGODB_PARAMETER: ""
+  MONGODB_NAME: ""
+  MONGODB_AUTH_MECHANISM: ""
+  MONGODB_SOCKS5_PROXY: ""
+  AWS_ROLE_ARN: ""
+  AWS_SESSION_NAME: ""
+  AWS_REGION: ""
+  AWS_WEB_IDENTITY_TOKEN_FILE: ""

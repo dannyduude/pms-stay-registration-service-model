@@ -1,0 +1,54 @@
+# codeway-stg.yaml
+
+resources:
+  repositories:
+    - repository: templates
+      type: githubenterprise
+      name: codeway/templates
+      endpoint: pdtk-ghe
+
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger: none
+
+pr: none
+
+variables:
+  - group: Defaults
+  - group: GravityServicesVariables
+  - group: Sulu
+  - group: Rammstein
+
+  - name: releaseBranch
+    value: main
+
+  - name: serviceName
+    value: threedaas-service-name
+
+  - name: ecrRepoVar
+    value: ${{ parameters.printOSServiceName }}-ecrRepo
+
+  - name: roleArnVar
+    value: ${{ parameters.printOSServiceName }}-roleArn
+
+  - name: externalIdVar
+    value: ${{ parameters.printOSServiceName }}-externalId
+
+parameters:
+  - name: printOSServiceName
+    type: string
+    displayName: "PrintOS service identifier (used for AWS/ECR resources) (format: threedaas-service-name)"
+    default: "go-printos-backend-quickstart" 
+
+##########################################
+#  GRAVITY SERVICE BUILD
+##########################################
+stages:
+  - template: /projects/3dGravity/templates/3daas-deploy-template-v0.yaml@templates
+    parameters:
+      stackToDeploy: stg
+      ecrRepo: $($(ecrRepoVar))
+      ecrRegion: $(aws-printos-cd-ecr-region)
+      roleARN: $($(roleArnVar))
+      awsAccountNumber: $(aws-printos-cd-account-number)
+      awsExternalId: $($(externalIdVar))

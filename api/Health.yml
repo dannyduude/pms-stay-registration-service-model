@@ -1,0 +1,26 @@
+---
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://udm3d.hp.io/gravity/v1/Health
+title: Health
+description: A structure to represent health check responses in HTTP calls
+type: object
+properties:
+  healthy:
+    type: boolean
+    description: Whether the responder is healthy or not
+  versions:
+    type: object
+    description: | 
+      list relevant components and their deployed versions 
+      (as in, build system defined versions)
+    additionalProperties:
+      type: string
+  dependencies:
+    type: object
+    description: lists components or services that are critical for the responder to work properly
+    additionalProperties:
+      type: boolean
+      description: Whether the dependency of the responder is healthy or not
+required:
+  - healthy
+  

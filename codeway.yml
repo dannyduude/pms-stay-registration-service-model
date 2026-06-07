@@ -1,0 +1,122 @@
+# codeway.yaml
+
+resources:
+  repositories:
+    - repository: codeway
+      type: githubenterprise
+      name: codeway/templates
+      endpoint: pdtk-ghe
+
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - master
+
+pr:
+  branches:
+    include:
+      - master
+
+parameters:
+  - name: serviceName
+    type: string
+    displayName: "Logical service name (template) (format: gravity-service-name)"
+    default: "threedaas-quickstart-model"
+
+  - name: printOSServiceName
+    type: string
+    displayName: "PrintOS service identifier (used for AWS/ECR resources) (format: threedaas-service-name)"
+    default: "go-printos-backend-quickstart" 
+
+variables:
+  - group: Defaults
+  - group: GravityServicesVariables
+  - group: Sulu
+  - group: Rammstein
+
+  - name: ecrRepoVar
+    value: ${{ parameters.printOSServiceName }}-ecrRepo
+
+  - name: roleArnVar
+    value: ${{ parameters.printOSServiceName }}-roleArn
+
+  - name: externalIdVar
+    value: ${{ parameters.printOSServiceName }}-externalId
+
+##########################################
+#  GRAVITY SERVICE BUILD
+##########################################
+stages:
+  - template: /projects/3dGravity/templates/3daas-service-template-v0.yaml@codeway
+    parameters:
+      releaseBranch: master
+      serviceName: ${{ parameters.serviceName }}
+      versionMajorMinor: '0.1'
+      sonaUserCode: $(sonaUserCode)
+      sonaPasscode: $(sonaPasscode)
+      pingCheck: healthcheck/liveness
+      veracodeContent: |
+          **/*
+          !.git/**/*
+          !README.md
+          !LICENSE.md
+          !.gitignore
+          !codeway.yml
+          !CODEOWNERS
+          !CONTRIBUTING.md
+          !**/go-gravity-api/**/*.py
+          !**/test.py
+      unitTestParams:
+        utMinimumCoverageRate: 40
+        testArgs: '-short'
+        owaspDependencyCheckEnabled: true
+        coverExcludePatterns:
+          - /.gen.go/d
+          - /_test/d
+          - /mock/d
+
+      # functionalTestParams:
+      #   testArgs: "./test"
+      #   proxyPort: 8080
+      #   servicePort: 8090
+      #   composeFile: docker-compose.yaml
+      #   openApiSpec: "./api/go-gravity-api/api/gravity-services-info/openapi.yml"
+      #   openApiSpec: "./api/openapi.yml"
+      #   functionalTestMinCoverageRate: 20
+
+      SonarQubeParams:
+        sonarqubeCredentials: SonarQube.3DSoftware.Gravity
+        sonarQubePAT: $(sonarQubePAT)
+        sonarProjectPrefix: Gravity_
+        sonarProperties: |
+          sonar.sources=.
+          sonar.exclusions=**/*.gen.go,**/mock/**,**/mocks/**,**/*_test.go,**/vendor/**,**/testdata/*,**/bootstrap.go,**/go-gravity-api/**
+          sonar.coverage.exclusions=**/*.gen.go,**/*_test.go,**/mock/**,**/mocks/**,**/bootstrap.go,**/go-gravity-api/**
+
+      dockerParams:
+        dockerRegistryAddress: harbor.ext.hp.com
+        dockerProject: pib-sw
+        dockerHubBuildConnection: harbor-pib-gravity
+        dockerHubPublishConnection: harbor-pib-gravity
+        dockerBuildOnContainer: true
+        additionalDockerArgs: --build-arg ghe_auth_token=$(ghe_auth_token)
+        dockerEnvVars: -e QST_HTTP_PORT=8080 -e EXECUTE_AS_DRY_RUN=true
+        internalContainerPort: 8080
+
+      buildParams:
+        golangVersion: '1.26.3'
+        goPrivate: github.azc.ext.hp.com/3DSoftware/*
+        buildOutput: go/bin/quickstart
+        buildLocation: ./app/server
+        gheUser: $(ghe_user)
+        gheToken: $(ghe_auth_token)
+
+      printOSParams:
+        ecrRepo: $($(ecrRepoVar))
+        ecrRegion: $(aws-printos-cd-ecr-region)
+        roleARN: $($(roleArnVar))
+        awsAccountNumber: $(aws-printos-cd-account-number)
+        awsExternalId: $($(externalIdVar))
+        stackToDeploy: dev

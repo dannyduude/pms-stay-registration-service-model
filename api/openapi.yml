@@ -1,0 +1,390 @@
+openapi: '3.0.2'
+info:
+  title: go-printos-backend-quickstart
+  version: '0.0'
+paths:
+  /healthcheck/liveness:
+    get:
+      summary: Check that the service is alive.
+      security: []
+      parameters:
+        - $ref: '../api/go-gravity-api/api/base/base.yml#/components/parameters/X-Request-ID'
+      operationId: liveness
+      tags:
+        - Deployment
+      responses:
+        200:
+          $ref: '#/components/responses/LivenessResponse'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+  /healthcheck/readiness:
+    get:
+      summary: Check the ongoing health of the application.
+      security: []
+      parameters:
+        - $ref: '../api/go-gravity-api/api/base/base.yml#/components/parameters/X-Request-ID'
+      tags:
+        - Deployment
+      operationId: readiness
+      responses:
+        200:
+          $ref: '#/components/responses/ReadinessResponse'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/*:
+    get:
+      summary: Test connection from frontend to backend.
+      operationId: helloworld
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Name to salute
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Hello, World!
+
+  /api/v1/helloworlds:
+    get:
+      summary: Gets All Hello World entities.
+      operationId: getHelloWorlds
+      parameters:
+        - $ref: '../api/go-gravity-api/api/base/base.yml#/components/parameters/Accept'
+        - $ref: '../api/go-gravity-api/api/base/base.yml#/components/parameters/Accept-Encoding'
+        - $ref: '../api/go-gravity-api/api/base/base.yml#/components/parameters/Authorization'
+        - $ref: '../api/go-gravity-api/api/base/base.yml#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.api+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResourceResponseDocument'
+                  - type: object
+                    required:
+                      - data
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/HelloWorld'
+                            - type: object
+                              required:
+                                - relationships
+                              properties:
+                                relationships:
+                                  $ref: '#/components/schemas/HelloWorldRelationships'
+                      included:
+                        type: array
+    post:
+      summary: Create a hello World
+      operationId: createHelloWorld
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    attributes:
+                      $ref: '#/components/schemas/POSTHelloWorldAttributes'
+      responses:
+        201:
+          description: Created
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.api+json; charset=utf-8
+          content:
+            application/vnd.api+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResourceResponseDocument'
+                  - type: object
+                    required:
+                      - data
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/HelloWorld'
+                          - type: object
+                            required:
+                              - relationships
+                            properties:
+                              relationships:
+                                $ref: '#/components/schemas/HelloWorldRelationships'
+
+        400:
+          description: Bad Request
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/vnd.api+json; charset=utf-8
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/JSONAPIError'
+              examples:
+                DeviceMaterialIDNotFoundExample:
+                  value:
+                    errors:
+                      [
+                        {
+                          source: { pointer: '' },
+                          title: '',
+                          status: 400,
+                          code: 0,
+                          detail: '',
+                        },
+                      ]
+
+components:
+  responses:
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    LivenessResponse:
+      description: Describes the health of the service.
+      headers:
+        X-Request-ID:
+          $ref: '../api/go-gravity-api/api/base/base.yml#/components/headers/X-Request-ID'
+      content:
+        application/json; charset=utf-8:
+          schema:
+            $ref: '#/components/schemas/Health'
+
+    ReadinessResponse:
+      description: Describes the readiness of the service.
+      headers:
+        X-Request-ID:
+          $ref: '../api/go-gravity-api/api/base/base.yml#/components/headers/X-Request-ID'
+      content:
+        application/json; charset=utf-8:
+          schema:
+            $ref: '#/components/schemas/Health'
+
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ErrorType'
+        message:
+          type: string
+      required:
+        - code
+        - message
+    ErrorType:
+      type: string
+      description: An internal error code to further specify what caused an error.
+      enum:
+        - MissingParameter
+        - InvalidParameter
+        - DependencyError
+    Liveness:
+      type: object
+      description: Liveness send information about backend state and version
+      required:
+        - healthy
+      properties:
+        healthy:
+          type: boolean
+        versions:
+          $ref: '#/components/schemas/Versions'
+    Versions:
+      type: object
+      additionalProperties:
+        type: string
+
+    Dependencies:
+      type: object
+      additionalProperties:
+        type: boolean
+
+    JSONAPI:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+          default: '1.0'
+
+    Meta:
+      type: object
+
+    URL:
+      type: string
+      format: url
+
+    UUID:
+      type: string
+      format: uuid
+      example: 'b76ffcdc-e45a-4b30-824a-b7dc09ae8b31'
+
+    Links:
+      type: object
+      required:
+        - self
+      properties:
+        self:
+          $ref: '#/components/schemas/URL'
+
+    LinksRelationship:
+      allOf:
+        - type: object
+          required:
+            - related
+          properties:
+            related:
+              $ref: '#/components/schemas/URL'
+        - $ref: '#/components/schemas/Links'
+
+    ResourceData:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        type:
+          type: string
+
+    Relationship:
+      type: object
+      properties:
+        links:
+          $ref: '#/components/schemas/LinksRelationship'
+        data:
+          $ref: '#/components/schemas/ResourceData'
+
+    ResourceResponseDocument:
+      type: object
+      required:
+        - jsonapi
+      properties:
+        jsonapi:
+          $ref: '#/components/schemas/JSONAPI'
+        meta:
+          $ref: '#/components/schemas/Meta'
+        links:
+          $ref: '#/components/schemas/Links'
+
+    HelloWorldRelationships:
+      allOf:
+        - $ref: '#/components/schemas/AuditStamp'
+    AuditStamp:
+      type: object
+      properties:
+        createdBy:
+          $ref: '#/components/schemas/Relationship'
+        updatedBy:
+          $ref: '#/components/schemas/Relationship'
+
+    DateStamp:
+      type: object
+      required:
+        - createdAt
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    HelloWorld:
+      allOf:
+        - type: object
+          required:
+            - attributes
+          properties:
+            attributes:
+              $ref: '#/components/schemas/HelloWorldAttributes'
+        - $ref: '#/components/schemas/ResourceData'
+
+    POSTHelloWorldAttributes:
+      allOf:
+        - type: object
+          properties:
+            message:
+              type: string
+
+    HelloWorldAttributes:
+      allOf:
+        - $ref: '#/components/schemas/DateStamp'
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    JSONAPIError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/JSONAPIErrorElement'
+
+    JSONAPIErrorElement:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        links:
+          $ref: '#/components/schemas/Links'
+        status:
+          type: integer
+        code:
+          type: integer
+        title:
+          type: string
+        detail:
+          type: string
+        source:
+          type: object
+          properties:
+            pointer:
+              type: string
+        meta:
+          $ref: '#/components/schemas/MetaError'
+
+    MetaError:
+      allOf:
+        - type: object
+          required:
+            - name
+          properties:
+            total:
+              type: integer
+            count:
+              type: integer
+            offset:
+              type: integer
+            limit:
+              type: integer
+        - $ref: '#/components/schemas/Meta'
+
+    Health:
+      $ref: Health.yml

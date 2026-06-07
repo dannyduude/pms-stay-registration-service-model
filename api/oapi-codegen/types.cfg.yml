@@ -1,0 +1,8 @@
+package: models
+generate:
+  models: true
+output: models/types.gen.go
+output-options:
+  skip-prune: true
+import-mapping:
+  "../api/go-gravity-api/api/base/base.yml": github.azc.ext.hp.com/3DSoftware/go-gravity-api/api/base/models

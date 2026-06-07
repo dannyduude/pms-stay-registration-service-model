@@ -1,0 +1,21 @@
+version: "3"
+services:
+ gravity-backend-quickstart:
+    container_name: gravity-backend-quickstart
+    image: gravity-backend-quickstart
+    network_mode: "host"  # This is required for the webserver to be accessible from outside the container
+    build:
+      context: .
+      args:
+        - NO_PROXY
+        - HTTP_PROXY
+        - HTTPS_PROXY
+        - no_proxy
+        - http_proxy
+        - https_proxy
+        - ghe_auth_token        
+    environment:
+      - QST_SERVICE_VERSION
+      - QST_LOG_FILE_PATH
+      - QST_HOST
+      - QST_HTTP_PORT
